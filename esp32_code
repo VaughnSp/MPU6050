@@ -1,1 +1,49 @@
+/* This code is used to turn the Esp32 into a ModBus TCP 
+and to test if OpenPLC and ScadaBR are connected to the Modbus TCP server. */
 
+#include <WiFi.h>
+#include <ModbusIP_ESP8266.h>
+
+const char* ssid = "HUAWEI-2.4G-P9n4";
+const char* password = "yEWwS6gn";
+
+// Input register address (matches mb.addIreg / mb.Ireg)
+const int SENSOR_IREG = 100;
+
+ModbusIP mb;
+unsigned long ts = 0;
+uint16_t simValue = 0;
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  mb.server();            // Start Modbus TCP server on port 502
+  mb.addIreg(SENSOR_IREG, 0);
+
+  ts = millis();
+}
+
+void loop() {
+  // Service incoming Modbus TCP requests every loop
+  mb.task();
+
+  // Update simulated input register every 2 seconds (no sensor required)
+  if (millis() - ts >= 2000) {
+    ts = millis();
+    simValue += 10; // Increments by 10 every 2s so changes are easy to spot
+    mb.Ireg(SENSOR_IREG, simValue);
+  }
+
+  delay(10);
+}
