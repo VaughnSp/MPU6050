@@ -1,0 +1,67 @@
+#include <WiFi.h>
+#include <Wire.h>
+#include <ModbusIP_ESP8266.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+
+const char* ssid = "YOUR_WIFI";
+const char* password = "YOUR_PASSWORD";
+
+// Input registers (offsets in ScadaBR)
+const int REG_ACC_X = 0;
+const int REG_ACC_Y = 1;
+const int REG_ACC_Z = 2;
+const int REG_GYR_X = 3;
+const int REG_GYR_Y = 4;
+const int REG_GYR_Z = 5;
+
+ModbusIP mb;
+Adafruit_MPU6050 mpu;
+unsigned long ts = 0;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+
+  if (!mpu.begin()) {
+    Serial.println("MPU6050 not found, check wiring");
+    while (true) delay(1000);
+  }
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  mb.server();
+  for (int i = 0; i < 6; i++) mb.addIreg(i, 0);
+}
+
+void loop() {
+  mb.task();
+
+  if (millis() - ts >= 50) {   // 20 Hz
+    ts = millis();
+    sensors_event_t a, g, t;
+    mpu.getEvent(&a, &g, &t);
+
+    // a in m/s², g in rad/s -> convert gyro to °/s, then x100
+    mb.Ireg(REG_ACC_X, (int16_t)(a.acceleration.x * 100));
+    mb.Ireg(REG_ACC_Y, (int16_t)(a.acceleration.y * 100));
+    mb.Ireg(REG_ACC_Z, (int16_t)(a.acceleration.z * 100));
+    mb.Ireg(REG_GYR_X, (int16_t)(g.gyro.x * 57.2958 * 100));
+    mb.Ireg(REG_GYR_Y, (int16_t)(g.gyro.y * 57.2958 * 100));
+    mb.Ireg(REG_GYR_Z, (int16_t)(g.gyro.z * 57.2958 * 100));
+
+    Serial.printf("Acc: %.2f %.2f %.2f  Gyro: %.1f %.1f %.1f\n",
+      a.acceleration.x, a.acceleration.y, a.acceleration.z,
+      g.gyro.x * 57.2958, g.gyro.y * 57.2958, g.gyro.z * 57.2958);
+  }
+}
