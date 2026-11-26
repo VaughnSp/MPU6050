@@ -56,9 +56,9 @@ void loop() {
     mb.Ireg(REG_ACC_X, (int16_t)(a.acceleration.x * 100));
     mb.Ireg(REG_ACC_Y, (int16_t)(a.acceleration.y * 100));
     mb.Ireg(REG_ACC_Z, (int16_t)(a.acceleration.z * 100));
-    mb.Ireg(REG_GYR_X, (int16_t)(g.gyro.x * 57.2958 * 100));
-    mb.Ireg(REG_GYR_Y, (int16_t)(g.gyro.y * 57.2958 * 100));
-    mb.Ireg(REG_GYR_Z, (int16_t)(g.gyro.z * 57.2958 * 100));
+    mb.Ireg(REG_GYR_X, (int16_t)(g.gyro.x * 57.2958 * 10));
+    mb.Ireg(REG_GYR_Y, (int16_t)(g.gyro.y * 57.2958 * 10));
+    mb.Ireg(REG_GYR_Z, (int16_t)(g.gyro.z * 57.2958 * 10));
 
     Serial.printf("Acc: %.2f %.2f %.2f  Gyro: %.1f %.1f %.1f\n",
       a.acceleration.x, a.acceleration.y, a.acceleration.z,
